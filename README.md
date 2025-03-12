@@ -23,9 +23,20 @@ RedMica is fully compatible with Redmine. You can check more details on the offi
   * [Developer guide](https://www.redmine.org/projects/redmine/wiki/Developer_Guide)
     * [Redmine API](https://www.redmine.org/projects/redmine/wiki/Rest_api)
 
-## Docker image
+## Quickly launch RedMica trial environment with Docker
 
-* Docker Hub: [redmica/redmica](https://hub.docker.com/r/redmica/redmica)
+You can use Docker to quickly set up a RedMica environment for a trial.
+
+1. Uncompress the program archive
+2. Build a Docker image by running:  
+  `docker build -t redmica_trial .`
+3. Launch RedMica in a new Docker container by running:  
+  `docker run -p 3000:3000 -e RAILS_ENV=production redmica_trial`  
+  Once RedMica has started, point your browser to http://localhost:3000/  
+  You should now see the application welcome page.
+4. Delete the container and image after have played with RedMica:  
+  `docker container rm CONTAINER_ID`  
+  `docker image rm redmica_trial`
 
 ## Maintainer
 
