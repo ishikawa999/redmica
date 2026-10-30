@@ -5,10 +5,4 @@ replaceIssueFormWith('<%= escape_javascript(render :partial => 'form') %>');
   $('#log_time').hide();
 <% end %>
 
-<% if @issue.notes_addable? %>
-  $('#add_notes').show();
-  $('#add_attachments').show();
-<% else %>
-  $('#add_notes').hide();
-  $('#add_attachments').hide();
-<% end %>
+$('#issue-form').toggleClass('notes-not-addable', <%= !@issue.notes_addable? %>);

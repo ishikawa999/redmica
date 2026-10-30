@@ -1157,7 +1157,7 @@ function addFormObserversForDoubleSubmit() {
 
 function defaultFocus(){
   if (($('#content :focus').length == 0) && (window.location.hash == '')) {
-    $('#content input[type=text]:visible, #content textarea:visible').first().focus();
+    $('#content input[type=text]:visible, #content textarea:visible').not('.no-default-focus').first().focus();
   }
 }
 

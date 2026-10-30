@@ -3,8 +3,10 @@
 
 <div style="clear: both;"></div>
 <% if @issue.editable? %>
-  <div id="update" style="display:none;">
-    <h3><%= l(:button_edit) %></h3>
-    <%= render :partial => 'edit' %>
-  </div>
+  <% comment_only = @issue.notes_addable? %>
+  <%= tag.div id: 'update', class: ('comment-only' if comment_only), hidden: !comment_only,
+              data: {controller: 'issue-update-form'} do %>
+    <%= tag.h3 l(:button_edit), hidden: comment_only, data: {issue_update_form_section: 'heading'} %>
+    <%= render :partial => 'edit', :locals => {:comment_only => comment_only} %>
+  <% end %>
 <% end %>

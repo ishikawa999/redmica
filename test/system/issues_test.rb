@@ -288,6 +288,154 @@ class IssuesSystemTest < ApplicationSystemTestCase
     assert_equal 'CF value', issue.custom_field_value(field)
   end
 
+  test "show comment form by default and expand it for editing" do
+    log_user('jsmith', 'jsmith')
+    visit '/issues/1'
+
+    assert_no_link 'Add a comment'
+    assert_selector '#update', :visible => true
+    assert_selector '#update.comment-only'
+    assert_no_link 'Cancel'
+    assert_selector '#issue_notes[placeholder="Add a note"]'
+    assert_selector '#update > h3', :visible => :hidden
+    assert_selector '#issue-form [data-issue-update-form-section="attributes"]', :visible => :hidden
+    assert_selector '#issue-form [data-issue-update-form-section="time-entry"]', :visible => :hidden
+    assert_selector '#issue-form #add_notes', :visible => true
+    assert_selector '#issue-form #add_attachments', :visible => true
+
+    page.first(:link, 'Edit').click
+
+    assert_no_selector '#update.comment-only'
+    assert_link 'Cancel'
+    assert_no_selector '#issue_notes[placeholder]'
+    assert_selector '#update > h3', :visible => true
+    assert_selector '#issue-form [data-issue-update-form-section="attributes"]', :visible => true
+    assert_selector '#issue-form [data-issue-update-form-section="time-entry"]', :visible => true
+
+    fill_in 'issue_notes', :with => 'Draft note'
+    click_link 'Cancel'
+
+    assert_current_path '/issues/1'
+    assert_selector '#update.comment-only'
+    assert_no_link 'Cancel'
+    assert_selector '#issue_notes[placeholder="Add a note"]'
+    assert_selector '#update > h3', :visible => :hidden
+    assert_selector '#issue-form [data-issue-update-form-section="attributes"]', :visible => :hidden
+    assert_selector '#issue-form [data-issue-update-form-section="time-entry"]', :visible => :hidden
+    assert_equal 'Draft note', find('#issue_notes').value
+  end
+
+  test "should not focus the comment field when the issue page is loaded" do
+    log_user('jsmith', 'jsmith')
+    visit '/issues/1'
+
+    assert_selector '#issue_notes', :visible => true
+    assert_not_equal 'issue_notes', page.evaluate_script('document.activeElement.id')
+    assert_equal 0, page.evaluate_script('window.scrollY')
+  end
+
+  test "should not submit hidden fields after cancelling back to the comment form" do
+    issue = Issue.find(1)
+    log_user('jsmith', 'jsmith')
+    visit '/issues/1'
+
+    page.first(:link, 'Edit').click
+    fill_in 'Subject', :with => 'Changed subject'
+    fill_in 'Spent time', :with => '2'
+    click_link 'Cancel'
+
+    fill_in 'issue_notes', :with => 'Comment only'
+    assert_no_difference 'TimeEntry.count' do
+      assert_difference 'Journal.count' do
+        click_on 'Submit'
+        assert_text 'Successful update'
+      end
+    end
+
+    issue.reload
+    assert_equal 'Cannot print recipes', issue.subject
+    assert_equal 'Comment only', issue.journals.last.notes
+    assert_empty issue.journals.last.details
+  end
+
+  test "should hide the update form until edit is clicked when notes cannot be added" do
+    Role.find(1).remove_permission! :add_issue_notes
+    log_user('jsmith', 'jsmith')
+    visit '/issues/1'
+
+    assert_selector '#update', :visible => :hidden
+    assert_no_selector '#issue_notes', :visible => :all
+
+    page.first(:link, 'Edit').click
+
+    assert_selector '#update', :visible => true
+    assert_selector '#update > h3', :visible => true
+    assert_selector '#issue-form [data-issue-update-form-section="attributes"]', :visible => true
+
+    click_link 'Cancel'
+
+    assert_current_path '/issues/1'
+    assert_selector '#update', :visible => :hidden
+  end
+
+  test "should return to the comment form on cancel even if the selected tracker does not allow adding notes" do
+    role = Role.find(1)
+    role.set_permission_trackers :add_issue_notes, [1]
+    role.save!
+    log_user('jsmith', 'jsmith')
+    visit '/issues/1'
+
+    page.first(:link, 'Edit').click
+    select 'Feature request', :from => 'Tracker'
+    assert_selector '#add_notes', :visible => :hidden
+    click_link 'Cancel'
+
+    assert_selector '#update.comment-only', :visible => true
+    assert_selector '#issue_notes', :visible => true
+
+    page.first(:link, 'Edit').click
+    assert_selector '#issue-form [data-issue-update-form-section="attributes"]', :visible => true
+    assert_selector '#add_notes', :visible => :hidden
+    click_link 'Cancel'
+
+    # The quote reply must not leave an inline style that keeps the form visible on cancel
+    within('#change-1') { click_link 'Quote' }
+    assert_field 'issue_notes', :with => /wrote in #note-1:/
+    page.first(:link, 'Edit').click
+    click_link 'Cancel'
+    assert_no_selector '#update[style]'
+
+    fill_in 'issue_notes', :with => 'Comment only'
+    assert_difference 'Journal.count' do
+      click_on 'Submit'
+      assert_text 'Successful update'
+    end
+    assert_equal 1, Issue.find(1).tracker_id
+  end
+
+  test "should not delete attachments checked before cancelling back to the comment form" do
+    issue = Issue.find(3)
+    log_user('jsmith', 'jsmith')
+    visit '/issues/3'
+
+    assert_selector '#update.comment-only'
+    within('#update') { assert_no_link 'Edit attached files' }
+
+    page.first(:link, 'Edit').click
+    within('#update') { click_link 'Edit attached files' }
+    first('#existing-attachments input.deleted_attachment').check
+    click_link 'Cancel'
+
+    within('#update') { assert_no_link 'Edit attached files' }
+    fill_in 'issue_notes', :with => 'Comment only'
+    assert_no_difference -> {issue.attachments.count} do
+      assert_difference 'Journal.count' do
+        click_on 'Submit'
+        assert_text 'Successful update'
+      end
+    end
+  end
+
   test "update issue status" do
     issue = Issue.generate!
     log_user('jsmith', 'jsmith')

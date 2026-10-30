@@ -142,7 +142,7 @@ class IssuesReplyTest < ApplicationSystemTestCase
         '',
         ''
       ]
-      assert_equal expected_value.join("\n"), find_field('issue_notes').value
+      assert_field 'issue_notes', with: expected_value.join("\n")
     end
   end
 
@@ -238,7 +238,7 @@ class IssuesReplyTest < ApplicationSystemTestCase
         '',
         ''
       ]
-      assert_equal expected_value.join("\n"), find_field('issue_notes').value
+      assert_field 'issue_notes', with: expected_value.join("\n")
     end
   end
 

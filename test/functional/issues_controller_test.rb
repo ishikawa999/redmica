@@ -9179,18 +9179,55 @@ class IssuesControllerTest < Redmine::ControllerTest
     user
   end
 
-  def test_cancel_edit_link_for_issue_show_action_should_have_onclick_action
+  def test_cancel_edit_link_for_issue_show_action_should_have_stimulus_action
     @request.session[:user_id] = 1
     get(:show, :params => {:id => 1})
     assert_response :success
-    assert_select 'a[href=?][onclick=?]', "/issues/1", "$('#update').hide(); return false;", :text => 'Cancel'
+    assert_select 'a[href=?][data-action=?]', "/issues/1", "click->issue-update-form#showComment", :text => 'Cancel'
   end
 
-  def test_cancel_edit_link_for_issue_edit_action_should_not_have_onclick_action
+  def test_cancel_edit_link_for_issue_edit_action_should_not_have_stimulus_action
     @request.session[:user_id] = 1
     get(:edit, :params => {:id => 1})
     assert_response :success
-    assert_select 'a[href=?][onclick=?]', "/issues/1", "", :text => 'Cancel'
+    assert_select 'a[href=?]:not([data-action])', "/issues/1", :text => 'Cancel'
+  end
+
+  def test_show_should_hide_update_form_when_notes_are_not_addable
+    Role.find(1).remove_permission! :add_issue_notes
+    @request.session[:user_id] = 2
+    get(:show, :params => {:id => 1})
+    assert_response :success
+    assert_select 'div#update[hidden]:not(.comment-only)' do
+      assert_select 'h3:not([hidden])', :text => 'Edit'
+      assert_select 'fieldset[data-issue-update-form-section="attributes"]:not([hidden]):not([disabled])'
+      assert_select 'textarea#issue_notes', 0
+    end
+  end
+
+  def test_show_should_hide_and_disable_attachment_editing_in_comment_only_form
+    @request.session[:user_id] = 2
+    get(:show, :params => {:id => 3})
+    assert_response :success
+    assert_select '#update.comment-only fieldset[data-issue-update-form-section="existing-attachments"][hidden][disabled]' do
+      assert_select 'input.deleted_attachment'
+    end
+  end
+
+  def test_edit_should_display_attachment_editing
+    @request.session[:user_id] = 2
+    get(:edit, :params => {:id => 3})
+    assert_response :success
+    assert_select 'fieldset[data-issue-update-form-section="existing-attachments"]:not([hidden]):not([disabled])' do
+      assert_select 'input.deleted_attachment'
+    end
+  end
+
+  def test_edit_should_not_display_placeholder_in_notes_field
+    @request.session[:user_id] = 2
+    get(:edit, :params => {:id => 1})
+    assert_response :success
+    assert_select 'textarea#issue_notes:not([placeholder])'
   end
 
   def test_show_should_display_author_avatar_only_when_not_assigned

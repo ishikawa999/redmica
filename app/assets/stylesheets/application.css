@@ -1033,6 +1033,19 @@ fieldset#date-range p {margin-block: 2px; margin-inline: 0;}
 .changeset-comments {margin-block-end: 1em;}
 
 #update {margin-block-end: 1.4em;}
+#update.comment-only .box {padding: 6px 8px; margin-block-end: 6px;}
+#update.comment-only fieldset {border: 0; padding: 0;}
+/* Keep the legends for screen readers, as the notes field has no other label */
+#update.comment-only fieldset > legend {position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;}
+#update.comment-only #issue_notes {block-size: 6em;}
+#update.comment-only #add_attachments {margin-block-start: 4px;}
+/* Only groups the attachment editing controls so that they can be hidden and disabled together */
+#issue-form [data-issue-update-form-section="existing-attachments"]:not([hidden]) {display: contents;}
+
+/* Set by edit.js.erb when the selected project, tracker or status does not allow adding notes */
+#issue-form.notes-not-addable :is(#add_notes, #add_attachments) {display: none;}
+/* The comment-only form submits the issue as saved, so keep these shown for the edited tracker or status */
+#update.comment-only #issue-form.notes-not-addable :is(#add_notes, #add_attachments) {display: block;}
 
 #history p.nodata {display: none;}
 /* Prevent content from being hidden behind a #sticky-issue-header when scrolling via anchor links. */
@@ -2684,7 +2697,7 @@ div.news .reaction {
 
 /***** Media print specific styles *****/
 @media print {
-  #top-menu, #header, #main-menu, #sidebar, #footer, .contextual, .other-formats { display:none; }
+  #top-menu, #header, #main-menu, #sidebar, #footer, .contextual, .other-formats, #update { display:none; }
   #main { background: var(--oc-white); }
   #content { inline-size: 99%; margin: 0; padding: 0; border: 0; background: var(--oc-white); overflow: visible !important;}
   #wiki_add_attachment { display:none; }

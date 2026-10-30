@@ -1,6 +1,6 @@
-<div class="contextual">
+<div class="contextual" data-controller="issue-update-form">
 <%= link_to sprite_icon('edit', l(:button_edit)), edit_issue_path(@issue),
-            :onclick => 'showAndScrollTo("update", "issue_notes"); return false;',
+            :data => {:action => 'click->issue-update-form#showEdit'},
             :class => 'icon icon-edit ', :accesskey => accesskey(:edit) if @issue.editable? %>
 <%= link_to sprite_icon('time-add', l(:button_log_time)), new_issue_time_entry_path(@issue),
             :class => 'icon icon-time-add ' if @issue.time_loggable? %>
